@@ -227,13 +227,13 @@ int SistemaFicheiros::ContarFicheiros(Diretorias* diretoria){
         total += ContarFicheiros(subDir.get());
     }
 
-    return total;
+    return total;//devolve o total de ficheiros
 }
 
 int SistemaFicheiros::ContarDiretorias(Diretorias* diretoria){
     //esta função pode contar tanto todas as diretorias guardadas em memória
     //como pode contar todas as subdiretorias apartir de uma diretoria alvo
-    
+
     //se não for dada diretoria lavo, comaça pela raiz
     if(!diretoria){
         diretoria = raiz.get();
@@ -246,4 +246,127 @@ int SistemaFicheiros::ContarDiretorias(Diretorias* diretoria){
     for(const auto& subDir : diretoria->getSubDiretorias()){
         total += ContarDiretorias(subDir.get());
     }
+
+    return total;//devolve o total de diretorias
+}
+
+size_t SistemaFicheiros::Memoria(Diretorias* diretoria){
+    //função para calcular a memória ocupada
+    if(!diretoria){
+        diretoria = raiz.get();
+    }
+
+    //soma o tamanho de todos os ficheiros na diretoria
+    size_t total = 0;
+    for(const auto& ficheiro: diretoria->getFicheiros()){
+        //somar o tamanho de cada ficheiro
+        total += ficheiro->getTamanho();
+    }
+
+    //soma o tamanho de todos os ficheiros recursivamente nas subdiretorias
+    for(const auto& subDir : diretoria->getSubDiretorias()){
+        total += Memoria(subDir.get());
+    }
+
+    return total;//devolve o total de memória ocupada
+}
+
+Diretorias* SistemaFicheiros::DiretoriaMaisElementos(){
+    return DiretoriaMaisElementosRecursivo(raiz.get());
+}
+
+Diretorias* SistemaFicheiros::DiretoriaMaisElementosRecursivo(Diretorias* diretoria){
+    if(!diretoria) return nullptr;
+    
+    //começar com a diretoria atual como candidata
+    Diretorias* maisElementos = diretoria;
+    size_t maxElementos = ContarFicheiros(diretoria) + ContarDiretorias(diretoria);
+
+    //procurar recursivamente em todas as subdiretorias
+    for(const auto& subDir : diretoria->getSubDiretorias()){
+        Diretorias* candidata = DiretoriaMaisElementosRecursivo(subDir.get());
+        size_t numElementos = ContarFicheiros(candidata) + ContarDiretorias(candidata);
+        
+        if(numElementos > maxElementos){
+            maisElementos = candidata;
+            maxElementos = numElementos;
+        }
+    }
+    
+    return maisElementos;
+}
+
+Diretorias* SistemaFicheiros::DiretoriaMenosElementos(){
+    return DiretoriaMenosElementosRecursivo(raiz.get());
+}
+
+Diretorias* SistemaFicheiros::DiretoriaMenosElementosRecursivo(Diretorias* diretoria){
+    if(!diretoria) return nullptr;
+    
+    //começar com a diretoria atual como candidata
+    Diretorias* menosElementos = diretoria;
+    size_t minElementos = ContarFicheiros(diretoria) + ContarDiretorias(diretoria);
+
+    //procurar recursivamente em todas as subdiretorias
+    for(const auto& subDir : diretoria->getSubDiretorias()){
+        Diretorias* candidata = DiretoriaMenosElementosRecursivo(subDir.get());
+        size_t numElementos = ContarFicheiros(candidata) + ContarDiretorias(candidata);
+        
+        if(numElementos < minElementos){
+            menosElementos = candidata;
+            minElementos = numElementos;
+        }
+    }
+    
+    return menosElementos;
+}
+
+Ficheiros* SistemaFicheiros::FicheiroMaior(){
+    return FicheiroMaiorRecursivo(raiz.get());
+}
+
+Ficheiros* SistemaFicheiros::FicheiroMaiorRecursivo(Diretorias* diretoria){
+    if(!diretoria) return nullptr;
+
+    //determinar o maior ficheiro na diretoria atual
+    Ficheiros* maior = nullptr;
+    size_t maxTamanho = 0;
+    
+    //procurar o maior ficheiro na diretoria atual
+    for(const auto& ficheiro : diretoria->getFicheiros()){
+        if(ficheiro->getTamanho() > maxTamanho){
+            maior = ficheiro.get();
+            maxTamanho = ficheiro->getTamanho();
+        }
+    }
+    
+    //procurar recursivamente nas subdiretorias
+    for(const auto& subDir : diretoria->getSubDiretorias()){
+        Ficheiros* candidato = FicheiroMaiorRecursivo(subDir.get());
+        if(candidato && candidato->getTamanho() > maxTamanho){
+            maior = candidato;
+            maxTamanho = candidato->getTamanho();
+        }
+    }
+    
+    return maior;
+}
+
+Diretorias* SistemaFicheiros::DiretoriaMaisEspaco(){
+    //função para encontrar a maior diretoria
+    if(!diretoria) return nullptr;
+
+    //determinar a diretoria com mais espaço ocupado
+    Diretorias* maisEspaco = nullptr;
+    size_t maxEspaco = 0;
+    
+    //procurar a maior subdiretoria na diretoria atual
+    for(const auto& subDir : diretoria->getSubDiretorias()){
+        size_t espaco = Memoria(subDir.get());
+        if(espaco > maxEspaco){
+            maisEspaco = subDir.get();
+            maxEspaco = espaco;
+        }
+    } 
+    return maisEspaco;
 }

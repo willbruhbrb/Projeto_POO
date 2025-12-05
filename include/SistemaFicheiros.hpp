@@ -12,7 +12,12 @@ class SistemaFicheiros{
         Diretorias* diretoriaAnterior;
         
         //Funções auxiliares privadas para recursividade
+        //estas funções são usadas internamente pela classe
+        //servem apenas para simplificar o código público
         Diretorias* SearchRecursivo(Diretorias* diretoria, const string& nome) const;
+        Diretorias* DiretoriaMaisElementosRecursivo(Diretorias* diretoria);
+        Diretorias* DiretoriaMenosElementosRecursivo(Diretorias* diretoria);
+        Ficheiros* FicheiroMaiorRecursivo(Diretorias* diretoria);
     public:
         //contrutor
         SistemaFicheiros();
@@ -40,11 +45,11 @@ class SistemaFicheiros{
 
         //outras funções
         bool Load();//função para verificar se deu load corretamente do conteudo de uma diretoria
-        int ContarFicheiros(Diretorias* diretoria = nullptr);//função para contar ficheiros recursivamente
-        int ContarDiretorias(Diretorias* diretoria = nullptr);//função que faz a contagem de diretorias recursivamente
-        int Memoria();//função para calcular a memória ocupada (por fazer)
-        Diretorias* DiretoriaMaisElementos();//função para determinar a diretoria com mais informação (por fazer)
-        Diretorias* DiretoriaMenosElementos();//função para determinar a diretorias com menos informação (por fazer)
-        Ficheiros* FicheiroMaior();//função para encontrar o maior ficheiro (por fazer)
-        Diretorias* DiretoriaMaior();//função para encontrar a maior diretoria (por fazer)
+        int ContarFicheiros(Diretorias* diretoria = nullptr);//função para contar ficheiros recursivamente(tenho que fazer a função apartir da raiz)
+        int ContarDiretorias(Diretorias* diretoria = nullptr);//função que faz a contagem de diretorias recursivamente(tenho de fazer a função apartir da raiz)
+        int Memoria();//função para calcular a memória ocupada
+        Diretorias* DiretoriaMaisElementos();//função para determinar a diretoria com mais informação
+        Diretorias* DiretoriaMenosElementos();//função para determinar a diretorias com menos informação
+        Ficheiros* FicheiroMaior();//função para encontrar o maior ficheiro
+        Diretorias* DiretoriaMaisEspaco();//função para encontrar a maior diretoria
 };
