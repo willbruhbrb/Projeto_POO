@@ -57,15 +57,18 @@ Diretorias* SistemaFicheiros::CriarDiretoria(const string& nomeDiretoria){
     Diretorias* ptr = novaDiretoria.get();
     //push_back
     diretoriaAtual->addSubDiretoria(move(novaDiretoria));
+    return ptr;
 }
 bool SistemaFicheiros::RemoverDiretoria(string& nomeDiretoria){
     //remover subdiretoria da diretoria atual
     //verificações
     if(!diretoriaAtual){
         cout<<"Erro! Não está numa diretoria."<<endl;
+        return false;
     }
     if(nomeDiretoria.empty()){
         cout<<"Erro! Ficheiro vazio."<<endl;
+        return false;
     }
 
     //Recebe a lista de ficheirosna diretoria atual
@@ -113,9 +116,11 @@ bool SistemaFicheiros::RemoverFicheiro(string& nomeFicheiro){
     //verificações
     if(!diretoriaAtual){
         cout<<"Erro! Não está numa diretoria."<<endl;
+        return false;
     }
     if(nomeFicheiro.empty()){
         cout<<"Erro! Ficheiro vazio."<<endl;
+        return false;
     }
 
     //Recebe a lista de ficheirosna diretoria atual
@@ -137,14 +142,48 @@ bool SistemaFicheiros::RemoverFicheiro(string& nomeFicheiro){
 }
 
 //Sistema de navegação por nome de ficheiro/diretoria
-Diretorias* SistemaFicheiros::SearchLocal(const string& nome) const{
-    //verificar se o há ficheiro ou diretoria na diretoria atual
-    if(!diretoriaAtual || diretoriaAtual != raiz.get()){
-        cout<<"Erro! Não está numa diretoria."<<endl;
+Diretorias* SistemaFicheiros::Search(const string& nome) const{
+    if(!raiz || nome.empty()){
+        cout<<"Erro! Sistema não inicializado ou nome vazio."<<endl;
         return nullptr;
     }
+    
+    //começar pesquisa recursiva pela raiz
+    return SearchRecursivo(raiz.get(), nome);
+}
 
-    //se houver e for Ficheiro, criar um novo ficheiro e dar load do conteudo do ficheiro para esse ficheiro
+//Função auxiliar para pesquisa recursiva
+Diretorias* SistemaFicheiros::SearchRecursivo(Diretorias* diretoria, const string& nome) const{
+    if(!diretoria){
+        return nullptr;
+    }
+    
+    //verificar se a diretoria atual tem o nome procurado
+    if(diretoria->getNomeDiretoria() == nome){
+        cout<<"Diretoria '"<<nome<<"' encontrada!"<<endl;
+        return diretoria;
+    }
+    
+    //procurar nos ficheiros da diretoria atual
+    auto& ficheiros = diretoria->getFicheiros();
+    for(const auto& ficheiro : ficheiros){//procura todos os ficheiros da diretoria atual
+        if(ficheiro->getNomeFicheiro() == nome){
+            cout<<"Ficheiro '"<<nome<<"' encontrado na diretoria '"<<diretoria->getNomeDiretoria()<<"'!"<<endl;
+            return diretoria; //retorna a diretoria onde está o ficheiro
+        }
+    }
+    
+    //procurar recursivamente nas subdiretorias
+    auto& subDiretorias = diretoria->getSubDiretorias();
+    for(const auto& subDir : subDiretorias){//procura todas as subdiretorias da diretoria atual
+        Diretorias* resultado = SearchRecursivo(subDir.get(), nome);//chama a função recursivamente
+        if(resultado != nullptr){
+            return resultado; //encontrou, retorna o resultado
+        }
+    }
+    
+    //não encontrou em nenhum lugar
+    return nullptr;
 }
 
 
@@ -156,17 +195,55 @@ bool SistemaFicheiros::Load(){
         return false;
     }
 
-    if (raiz->getNomeDiretoria().empty()) {
+    if (raiz->getNomeDiretoria().empty()){
         cout << "Erro: Nome da raiz vazio!" << endl;
         return false;
     }
 
-    try {
+    try{
         auto& ficheiros = raiz->getFicheiros();
         auto& subDiretorias = raiz->getSubDiretorias();
         return true;
-    }catch (const exception& e) {
+    }catch (const exception& e){
         cout << "Erro ao aceder à estrutura: " << e.what() << endl;
         return false;
+    }
+}
+
+int SistemaFicheiros::ContarFicheiros(Diretorias* diretoria){
+    //esta função pode contar tanto todos os ficheiros guardados em memória
+    //como pode contar todos os ficheiros apartir de uma diretoria alvo
+
+    //se não for dada dirtetoria alvo, começa pela raiz
+    if (!diretoria){
+        diretoria = raiz.get();
+    }
+
+    //contar ficheiros na diretoria atual
+    int total = diretoria->getFicheiros().size();
+
+    //somar ficheiros de todas as subdiretorias recursivamente
+    for(const auto& subDir : diretoria->getSubDiretorias()){
+        total += ContarFicheiros(subDir.get());
+    }
+
+    return total;
+}
+
+int SistemaFicheiros::ContarDiretorias(Diretorias* diretoria){
+    //esta função pode contar tanto todas as diretorias guardadas em memória
+    //como pode contar todas as subdiretorias apartir de uma diretoria alvo
+    
+    //se não for dada diretoria lavo, comaça pela raiz
+    if(!diretoria){
+        diretoria = raiz.get();
+    }
+
+    //contar subdiretorias na diretoria atual
+    int total = diretoria->getSubDiretorias().size() + 1;//mais 1 para contar a diretoria atual
+
+    //somar subdiretorias de todas as subdiretorias recursivamente
+    for(const auto& subDir : diretoria->getSubDiretorias()){
+        total += ContarDiretorias(subDir.get());
     }
 }

@@ -10,6 +10,9 @@ class SistemaFicheiros{
         unique_ptr<Diretorias> raiz;
         Diretorias* diretoriaAtual;
         Diretorias* diretoriaAnterior;
+        
+        //Funções auxiliares privadas para recursividade
+        Diretorias* SearchRecursivo(Diretorias* diretoria, const string& nome) const;
     public:
         //contrutor
         SistemaFicheiros();
@@ -33,13 +36,12 @@ class SistemaFicheiros{
         void ListarConteudo() const;//função para listar as diretorias e ficheiros dentro de uma diretoria("ls" em linux)
         
         //Busca
-        Diretorias* SearchLocal(const string& nome) const;//função para fazer a pesquiza de conteudo dentro de uma diretoria
-        Diretorias* Search(const string& nome) const;//função para fazer a pesquiza recursivamente(por fazer)
+        Diretorias* Search(const string& nome) const;//função para fazer a pesquiza recursivamente
 
         //outras funções
         bool Load();//função para verificar se deu load corretamente do conteudo de uma diretoria
-        int ContarFicheiros();//função para contar ficheiros (por fazer)
-        int ContarDiretorias();//função para contar diretorias (por fazer)
+        int ContarFicheiros(Diretorias* diretoria = nullptr);//função para contar ficheiros recursivamente
+        int ContarDiretorias(Diretorias* diretoria = nullptr);//função que faz a contagem de diretorias recursivamente
         int Memoria();//função para calcular a memória ocupada (por fazer)
         Diretorias* DiretoriaMaisElementos();//função para determinar a diretoria com mais informação (por fazer)
         Diretorias* DiretoriaMenosElementos();//função para determinar a diretorias com menos informação (por fazer)
