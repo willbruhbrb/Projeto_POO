@@ -4,15 +4,18 @@
 #include <vector>
 #include <cstdint>
 #include <memory>
-#include "Ficheiros.hpp"
+#include "Elemento.hpp"
 using namespace std;
 
-class Diretorias {
+// Forward declaration para evitar dependência circular
+class Ficheiros;
+
+class Diretorias : public Elemento {
     private:
-        string nomeDiretoria; // nome da diretoria
-        vector<unique_ptr <Ficheiros>> ficheiros; //vetor de ficheiros na diretoria
-        vector<unique_ptr <Diretorias>> subDiretorias; //vetor de subdiretorias 
-        Diretorias *DiretoriaPai;//ponteiro para a diretoria raiz das subdiretorias
+        vector<unique_ptr<Ficheiros>> ficheiros; // vetor de ficheiros na diretoria
+        vector<unique_ptr<Diretorias>> subDiretorias; // vetor de subdiretorias 
+        Diretorias* DiretoriaPai; // ponteiro para a diretoria pai
+    
     public:
         //contrutor
         Diretorias(const string &nomeDiretoria);//para as diretorias só é obrigatório o nome
@@ -30,11 +33,10 @@ class Diretorias {
         void setNomeDiretoria(const string &nome);// o const impede que se altera o conteudo do endereço inicial
         void setDiretoriaPai(unique_ptr<Diretorias> addSubDiretoria);
         
-        //metodos para adicionar informação
-        //os ficheiros e subdiretorias não podem ser alterados diretamente
-        void addFicheiro(unique_ptr<Ficheiros> ficheiro);//adiciona um ficheiro à diretoria atual
-        void addSubDiretoria(unique_ptr<Diretorias> subDiretoria);//adiciona uma subdiretoria à diretoria atual
+        // Métodos para adicionar informação
+        void addFicheiro(unique_ptr<Ficheiros> ficheiro);
+        void addSubDiretoria(unique_ptr<Diretorias> subDiretoria);
         
-        //método para encontrar subdiretoria
-        Diretorias* encontrarSubDiretoria(const string& nome) const;//função para encontrar uma subdiretoria dentro de uma diretoria
-};  
+        // Método para encontrar subdiretoria
+        Diretorias* encontrarSubDiretoria(const string& nome) const;
+};

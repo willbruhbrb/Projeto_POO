@@ -10,6 +10,13 @@
 #include "Ficheiros.hpp"
 using namespace std;
 
+// Struct para armazenar informação dos ficheiros
+struct InfoFicheiro {
+    string nome;
+    size_t tamanho;
+    string caminho;
+};
+
 //contrutor
 SistemaFicheiros::SistemaFicheiros()
 :raiz(make_unique<Diretorias>("root")),
@@ -59,6 +66,7 @@ Diretorias* SistemaFicheiros::CriarDiretoria(const string& nomeDiretoria){
     diretoriaAtual->addSubDiretoria(move(novaDiretoria));
     return ptr;
 }
+
 bool SistemaFicheiros::RemoverDiretoria(string& nomeDiretoria){
     //remover subdiretoria da diretoria atual
     //verificações
@@ -111,6 +119,7 @@ Diretorias* SistemaFicheiros::CriarFicheiro(const string& nomeFicheiro, size_t t
 
     return diretoriaAtual;
 }
+
 bool SistemaFicheiros::RemoverFicheiro(string& nomeFicheiro){
     //remover ficheiro da diretoria atual
     //verificações
@@ -369,4 +378,330 @@ Diretorias* SistemaFicheiros::DiretoriaMaisEspaco(){
         }
     } 
     return maisEspaco;
+}
+
+bool SistemaFicheiros::RemoveAll(const string& opcao){
+    //função para remover conteudo
+    //se escrever "DIR" -> remove todas as subdiretorias e ficheiros
+    //caso contrário -> remove apenas os ficheiros (mantém subdiretorias)
+    
+    if(!raiz){
+        cout<<"Erro! Sistema não inicializado."<<endl;
+        return false;
+    }
+
+    if(opcao == "DIR"){
+        //remover TUDO: subdiretorias e ficheiros
+        raiz->getSubDiretorias().clear();
+        raiz->getFicheiros().clear();
+        cout<<"Todas as subdiretorias e ficheiros removidos com sucesso!"<<endl;
+    }else{
+        //remover APENAS os ficheiros (recursivamente)
+        RemoveAllFicheirosRecursivo(raiz.get());
+        cout<<"Todos os ficheiros removidos com sucesso!"<<endl;
+    }
+    
+    return true;
+}
+
+void SistemaFicheiros::RemoveAllFicheirosRecursivo(Diretorias* diretoria){
+    if(!diretoria) return;
+    
+    //remover ficheiros da diretoria atual
+    diretoria->getFicheiros().clear();
+    
+    //remover ficheiros de todas as subdiretorias recursivamente
+    for(auto& subDir : diretoria->getSubDiretorias()){
+        RemoveAllFicheirosRecursivo(subDir.get());
+    }
+}
+
+void SistemaFicheiros::Escrever_XML(){
+    //função para gravar os ficheiro em formato XML para todo o Sistema de Ficheiros
+    //por fazer
+    return nullptr;
+}
+
+
+bool SistemaFicheiros::Ler_XML(){
+    //função para ler os ficheiros em formato XML para todo o Sistema de Ficheiros
+    //por fazer
+    return false;
+}
+
+bool SistemaFicheiros::MoverFicheiro(const string& nomeFicheiro, Diretorias* destino){
+    //função para mover ficheiros entre diretorias
+    //se houver vários ficheiros com o mesmo nome, move o primeiro que encontrar
+    if(!diretoriaAtual){
+        cout<<"Erro! Não está numa diretoria."<<endl;
+        return false;
+    }
+    
+    if(!destino){
+        cout<<"Erro! Diretoria de destino inválida."<<endl;
+        return false;
+    }
+
+    //Recebe a lista de ficheiros na diretoria atual
+    auto& ficheiros = diretoriaAtual -> getFicheiros();
+
+    //procurar o ficheiro pelo nome
+    auto it = find_if(ficheiros.begin(), ficheiros.end(),
+        [&nomeFicheiro](const unique_ptr<Ficheiros>& ficheiro) {
+            return ficheiro->getNomeFicheiro() == nomeFicheiro;
+    });
+    if(it != ficheiros.end()){//o ficheiros.end() devolve o endereço a seguir ao último elemento
+        //mover o ficheiro para a diretoria alvo
+        destino->addFicheiro(move(*it));
+        ficheiros.erase(it);//remove o ponteiro nulo da diretora atual
+        cout<<"Ficheiro "<< nomeFicheiro <<" movido com sucesso!"<<endl;
+        return true;
+    }
+    else{
+        cout<<"Erro!Ficheiro Não encontrado."<<endl;
+        return false;
+    }
+}
+
+bool SistemaFicheiros::MoverDiretoria(const string& nomeDiretoria, Diretorias* destino){
+    //função para mover diretorias entre diretorias e todo o conteudo que ela contém
+    if(!diretoriaAtual){
+        cout<<"Erro! Não está numa diretoria."<<endl;
+        return false;
+    }
+    
+    if(!destino){
+        cout<<"Erro! Diretoria de destino inválida."<<endl;
+        return false;
+    }
+
+    //Recebe a lista de subdiretorias na diretoria atual
+    auto& subDiretorias = diretoriaAtual->getSubDiretorias();
+
+    //procurar diretoria pelo nome
+    auto it = find_if(subDiretorias.begin(), subDiretorias.end(),
+        [&nomeDiretoria](const unique_ptr<Diretorias>& dir) {
+            return dir->getNomeDiretoria() == nomeDiretoria;
+    });
+    
+    if(it != subDiretorias.end()){
+        //mover a diretoria para o destino (move transfere a propriedade do unique_ptr)
+        destino->addSubDiretoria(move(*it));
+        subDiretorias.erase(it);//remove o ponteiro nulo da diretoria atual
+        cout<<"Diretoria "<< nomeDiretoria <<" movida com sucesso!"<<endl;
+        return true;
+    }
+    else{
+        cout<<"Erro! Diretoria não encontrada."<<endl;
+        return false;
+    }
+}
+
+Datas* SistemaFicheiros::DataFicheiro(const string& nomeFicheiro){
+    //função para obter e mostrar a data de criação e modificação de um ficheiro
+    if(!diretoriaAtual){
+        cout<<"Erro! Não está numa diretoria!"<<endl;
+        return nullptr;
+    }
+
+    //Recebe a lista de ficheiros na diretoria atual
+    auto& ficheiros = diretoriaAtual->getFicheiros();
+
+    //procurar o ficheiro pelo nome
+    auto it = find_if(ficheiros.begin(), ficheiros.end(),
+        [&nomeFicheiro](const unique_ptr<Ficheiros>& ficheiro){
+            return ficheiro -> getNomeFicheiro() == nomeFicheiro;
+    });
+    if(it != ficheiros.end()){
+        //mostrar ambas as datas
+        Datas* dataCriacao = &((*it)->getDataCriacao());
+        Datas* dataModificacao = DataModificacaoFicheiro(nomeFicheiro);
+        
+        cout<<"Data de criação: ";
+        dataCriacao->mostrarData();
+        cout<<"Data de modificação: ";
+        if(dataModificacao) dataModificacao->mostrarData();
+        
+        //devolve a data de criação
+        return dataCriacao;
+    }
+    else{
+        cout<<"Erro! Ficheiro não encontrado."<<endl;
+        return nullptr;
+    }
+}
+
+Datas* SistemaFicheiros::DataModificacaoFicheiro(const string& nomeFicheiro){
+    //função para obter a data de modificação de um ficheiro
+    if(!diretoriaAtual){
+        cout<<"Erro! Não está numa diretoria!"<<endl;
+        return nullptr;
+    }
+
+    //Recebe a lista de ficheiros na diretoria atual
+    auto& ficheiros = diretoriaAtual->getFicheiros();
+
+    //procurar o ficheiro pelo nome
+    auto it = find_if(ficheiros.begin(), ficheiros.end(),
+        [&nomeFicheiro](const unique_ptr<Ficheiros>& ficheiro){
+            return ficheiro -> getNomeFicheiro() == nomeFicheiro;
+    });
+    if(it != ficheiros.end()){
+        //devolve a data de modificação do ficheiro
+        return &((*it)->getDataModificacao());
+    }
+    else{
+        cout<<"Erro! Ficheiro não encontrado."<<endl;
+        return nullptr;
+    }
+}
+
+void SistemaFicheiros::PesquisarAllFicheiros(const string& nomeFicheiro){
+    //função para procurar e listar todos os ficheiros com o nome especificado recursivamente, começando recursivamente na raiz
+    cout<<"=== Pesquisa de ficheiros com nome '"<<nomeFicheiro<<"' ==="<<endl;
+    PesquisarAllFicheirosRecursivo(raiz.get(), raiz->getNomeDiretoria(), nomeFicheiro);
+    cout<<"=============================================="<<endl;
+}
+
+void SistemaFicheiros::PesquisarAllFicheirosRecursivo(Diretorias* diretoria, const string& caminho, const string& nomeFicheiro){
+    if(!diretoria) return;
+    
+     //procurar todos os ficheiros com o nome especificado dentro da diretoria atual
+    auto& ficheiros = diretoria->getFicheiros();
+    for(const auto& ficheiro : ficheiros){
+        if(ficheiro->getNomeFicheiro() == nomeFicheiro){
+            cout<<caminho<<"/"<<ficheiro->getNomeFicheiro()<<" ("<<ficheiro->getTamanho()<<" bytes)"<<endl;
+        }
+    }
+    
+    //percorrer recursivamente todas as subdiretorias
+    auto& subDiretorias = diretoria->getSubDiretorias();
+    for(const auto& subDir : subDiretorias){
+        //para o novo caminho consideramos "novoCaminho" como uma string que 
+        //contem tanto o caminho atual como o nome da subdiretoria
+        //também consideramos a "/" para separar os nomes das diretorias
+        string novoCaminho = caminho + "/" + subDir->getNomeDiretoria();
+        PesquisarAllFicheirosRecursivo(subDir.get(), novoCaminho, nomeFicheiro);
+    }
+}
+
+void SistemaFicheiros::PesquisarAllDiretorias(const string& nomeDiretoria){
+    //função para procurar e listar recursivamente todos os ficheiros com o nome especificado, começando recursivamente na raiz 
+    cout<<"=== Pesquisa de diretorias com nome '"<<nomeDiretoria<<"' ==="<<endl;
+    PesquisarAllDiretoriasRecursivo(raiz.get(), raiz->getNomeDiretoria(), nomeDiretoria);
+    cout<<"=============================================="<<endl;
+}
+
+void SistemaFicheiros::PesquisaAllDiretoriasRecursivo(Diretorias* diretoria, const string& caminho, const string nomeDiretoria){
+    if(!diretoria) return;
+
+    //procurar todos os ficheiros com o nome especificado dentro da diretoria atual
+    auto& subDiretorias = diretoriaAtual->getSubDiretorias();
+    bool encontrou = false;
+    
+    for(const auto& subDir : subDiretorias){
+        if(subDir->getNomeDiretoria() == nomeDiretoria){
+            cout<< caminho<< "/"<<subDir->getNomeDiretoria()<<endl;
+            encontrou = true;
+    }
+
+    //percorrer recursivamente todas as subdiretorias
+    for(const auto& subDir : subDiretorias){
+        string novoCaminho = caminho + "/" + subDir->getNomeDiretoria();
+        PesquisaAllDiretoriasRecursivo(subDir.get(), novoCaminho, nomeDiretoria);
+    }
+}
+
+void RenomearFicheiros(const string& nomeAntigo, const string& nomeNovo){
+    //função para renomear um ficheiro na diretoria atual
+    if(!diretoriaAtual){
+        cout<<"Erro! Não está numa diretoria!"<<endl;
+        return;
+    }
+
+    //recebe a lista de ficheiros na diretoria atual
+    auto& ficheiros = diretoria->getFicheiros();
+
+    //procurar o ficheiro pelo nome
+    auto it= find_if(ficheiros.begin(), ficheiros.end(),
+        [&nomeAntigo](const unique_ptr<Ficheiros>& ficheiro){
+            return ficheiro->getNomeFicheiro() == nomeAntigo;
+    });
+
+    //renomear o ficheiro se encontrado
+    if(it != ficheiros.end()){
+        (*it)->setNomeFicheiro(nomeNovo);
+        cout<<"Ficheiro '"<<nomeAntigo<<"' renomeado para '"<<nomeNovo<<"' com sucesso!"<<endl;
+    }
+}
+
+bool SistemaFicheiros::FicheirosDuplicados(Diretorias* diretoria){
+    //função para encontrar ficheiros com o mesmo nome e o mesmo tamanho no sistema de ficheiros
+    if(!diretoria){
+        diretoria = raiz.get();
+    }
+
+    // Vetor para armazenar todos os ficheiros
+    vector<InfoFicheiro> todosFicheiros;
+    
+    // Recolher todos os ficheiros recursivamente
+    FicheirosDuplicadosRecursivo(diretoria, raiz->getNomeDiretoria(), todosFicheiros);
+    
+    // Procurar duplicados comparando cada ficheiro com os outros
+    bool encontrouDuplicados = false;
+    vector<bool> jaMostrado(todosFicheiros.size(), false); // para não mostrar o mesmo grupo 2 vezes
+    
+    cout << "=== Ficheiros Duplicados ===" << endl;
+    
+    for(size_t i = 0; i < todosFicheiros.size(); i++){
+        if(jaMostrado[i]) continue; // já mostrou este grupo
+        
+        vector<string> grupo; // grupo de ficheiros duplicados
+        grupo.push_back(todosFicheiros[i].caminho);
+        
+        // Comparar com todos os ficheiros seguintes
+        for(size_t j = i + 1; j < todosFicheiros.size(); j++){
+            if(todosFicheiros[i].nome == todosFicheiros[j].nome &&
+               todosFicheiros[i].tamanho == todosFicheiros[j].tamanho){
+                grupo.push_back(todosFicheiros[j].caminho);
+                jaMostrado[j] = true; // marcar como mostrado
+            }
+        }
+        
+        // Se encontrou duplicados (mais de 1 no grupo)
+        if(grupo.size() > 1){
+            encontrouDuplicados = true;
+            cout << "Duplicado encontrado (" << grupo.size() << " cópias):" << endl;
+            for(const auto& caminho : grupo){
+                cout << "  - " << caminho << endl;
+            }
+            cout << endl;
+        }
+    }
+    
+    if(!encontrouDuplicados){
+        cout << "Nenhum ficheiro duplicado encontrado." << endl;
+    }
+    
+    return encontrouDuplicados;
+}
+
+void SistemaFicheiros::FicheirosDuplicadosRecursivo(Diretorias* diretoria, const string& caminho, vector<InfoFicheiro>& todosFicheiros){
+    if(!diretoria) return;
+    
+    // Adicionar ficheiros da diretoria atual ao vetor
+    for(const auto& ficheiro : diretoria->getFicheiros()){
+        InfoFicheiro info;
+        info.nome = ficheiro->getNomeFicheiro();
+        info.tamanho = ficheiro->getTamanhoFicheiro();
+        info.caminho = caminho + "/" + ficheiro->getNomeFicheiro();
+        
+        todosFicheiros.push_back(info);
+    }
+    
+    // Recursão nas subdiretorias
+    for(const auto& subDir : diretoria->getSubDiretorias()){
+        string novoCaminho = caminho + "/" + subDir->getNomeDiretoria();
+        FicheirosDuplicadosRecursivo(subDir.get(), novoCaminho, todosFicheiros);
+    }
 }

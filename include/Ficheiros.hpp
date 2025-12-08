@@ -4,15 +4,12 @@
 #include <vector>
 #include <cstdint>
 #include "Datas.hpp"
+#include "Elemento.hpp"
 using namespace std;
 
-class Ficheiros{
+class Ficheiros : public Elemento {
     private:
-        string nomeFicheiro;//nome do ficheiro
-        size_t tamanhoFicheiro;//tamanho do ficheiro em bytes
-
-       Datas dataCriacao;//As datas foram feitas numa classe diferente
-       Datas dataModificacao;
+        size_t tamanhoFicheiro; // tamanho do ficheiro em bytes
 
     public:
         /*contrutor
@@ -25,20 +22,15 @@ class Ficheiros{
         */
         ~Ficheiros()= default;// não é necessário mas é boa prática
 
-        /*getters
-        estes métodos retornam os atributos do ficheiro
-        */
-        string getNomeFicheiro() const;//defenir o nome do ficheiro
-        size_t getTamanhoFicheiro() const;//calcular o tamanho do ficheiro
-        Datas getDataCriacao() const;//definir a data de criação
-        Datas getDataModificacao() const;//recolher a data de modificação
+        // Getters (nome vem da classe base)
+        string getNomeFicheiro() const; // wrapper para getNome()
+        size_t getTamanhoFicheiro() const;
+        
+        // Override de métodos virtuais da classe base
+        bool isDiretoria() const override;
+        size_t getTamanho() const override;
 
-        /*setters
-        estes métodos permitem alterar os atributos do ficheiro
-        por isso vamos só atribui-los apenas a valores alteráveis
-        */
-        void setNomeFicheiro(const string & nome);
+        // Setters
+        void setNomeFicheiro(const string& nome); // wrapper para setNome()
         void setTamanhoFicheiro(size_t tamanho);
-        void setDataModificacao(Datas &novaData);
-        //só a data de modificação visto que não se vai alterar a data de criação do ficheiro
-};
+s};

@@ -1,15 +1,17 @@
 #include "Diretorias.hpp"
+#include "Ficheiros.hpp"
 #include <iostream>
 #include <algorithm>
 using namespace std;
 
 //declaração das variaveis desta classe
 Diretorias::Diretorias(const string& nomeDiretoria)
-    :nomeDiretoria(nomeDiretoria), DiretoriaPai(nullptr){
+    : Elemento(nomeDiretoria, Datas(1, 1, 2024), Datas(1, 1, 2024)), // datas default
+      DiretoriaPai(nullptr) {
 }
 //getters
 const string Diretorias::getNomeDiretoria() const{
-    return nomeDiretoria;//getter do nome da diretoria
+    return getNome(); // usa o método da classe base
 }
 const vector<unique_ptr<Ficheiros>>& Diretorias::getFicheiros() const{
     return ficheiros;//getter do ficheiro
@@ -21,9 +23,34 @@ Diretorias* Diretorias::getDiretoriaPai() const{
     return DiretoriaPai;//getter do ponteiro da diretoria raiz
 }
 
+// Override de métodos virtuais
+bool Diretorias::isDiretoria() const {
+    return true; // diretorias são diretorias
+}
+
+size_t Diretorias::getTamanho() const {
+    size_t tamanhoTotal = 0;
+    
+    // Soma o tamanho de todos os ficheiros
+    for (const auto& ficheiro : ficheiros) {
+        tamanhoTotal += ficheiro->getTamanhoFicheiro();
+    }
+    
+    // Soma recursivamente o tamanho de todas as subdiretorias
+    for (const auto& subDir : subDiretorias) {
+        tamanhoTotal += subDir->getTamanho();
+    }
+    
+    return tamanhoTotal;
+}
+
 //setters
 void Diretorias::setNomeDiretoria(const string& nome){
-    nomeDiretoria = nome;//setter do nome
+    setNome(nome); // usa o método da classe base
+}
+
+void Diretorias::setDiretoriaPai(Diretorias* pai) {
+    DiretoriaPai = pai;
 }
 
 //outras funções
