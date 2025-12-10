@@ -4,18 +4,13 @@
 #include <sstream>
 #include <algorithm>
 #include <vector>
+#include <TinyXML2/Include/tinyxml2.h>
 #include "SistemaFicheiros.hpp"
 #include "Diretorias.hpp"
 #include "Datas.hpp"
 #include "Ficheiros.hpp"
 using namespace std;
-
-// Struct para armazenar informação dos ficheiros
-struct InfoFicheiro {
-    string nome;
-    size_t tamanho;
-    string caminho;
-};
+using namespace tinyxml2;
 
 //contrutor
 SistemaFicheiros::SistemaFicheiros()
@@ -417,16 +412,155 @@ void SistemaFicheiros::RemoveAllFicheirosRecursivo(Diretorias* diretoria){
 }
 
 void SistemaFicheiros::Escrever_XML(){
-    //função para gravar os ficheiro em formato XML para todo o Sistema de Ficheiros
-    //por fazer
-    return nullptr;
+    //função para gravar o sistema de ficheiros em formato XML
+    XMLDocument doc;
+    
+    // Criar declaração XML
+    XMLDeclaration* declaracao = doc.NewDeclaration();
+    doc.InsertFirstChild(declaracao);
+    
+    // Criar elemento raiz
+    XMLElement* raizXML = doc.NewElement("SistemaFicheiros");
+    doc.InsertEndChild(raizXML);
+    
+    // Escrever recursivamente a partir da raiz
+    Escrever_XML_Recursivo(doc, raizXML, raiz.get());
+    
+    // Guardar em ficheiro
+    if(doc.SaveFile("sistema_ficheiros.xml") == XML_SUCCESS){
+        cout << "Sistema de ficheiros guardado em 'sistema_ficheiros.xml' com sucesso!" << endl;
+    }else{
+        cout << "Erro ao guardar ficheiro XML!" << endl;
+    }
+}
+
+void SistemaFicheiros::Escrever_XML_Recursivo(XMLDocument& doc, XMLElement* elementoPai, Diretorias* diretoria){
+    if(!diretoria) return;
+    
+    // Criar elemento para a diretoria
+    XMLElement* dirElement = doc.NewElement("Diretoria");
+    dirElement->SetAttribute("nome", diretoria->getNomeDiretoria().c_str());
+    elementoPai->InsertEndChild(dirElement);
+    
+    // Adicionar ficheiros da diretoria
+    for(const auto& ficheiro : diretoria->getFicheiros()){
+        XMLElement* ficheiroElement = doc.NewElement("Ficheiro");
+        ficheiroElement->SetAttribute("nome", ficheiro->getNomeFicheiro().c_str());
+        ficheiroElement->SetAttribute("tamanho", (unsigned int)ficheiro->getTamanhoFicheiro());
+        
+        // Adicionar datas
+        Datas dataCriacao = ficheiro->getDataCriacao();
+        Datas dataModificacao = ficheiro->getDataModificacao();
+        
+        XMLElement* dataCriacaoElement = doc.NewElement("DataCriacao");
+        dataCriacaoElement->SetAttribute("dia", dataCriacao.getDia());
+        dataCriacaoElement->SetAttribute("mes", dataCriacao.getMes());
+        dataCriacaoElement->SetAttribute("ano", dataCriacao.getAno());
+        ficheiroElement->InsertEndChild(dataCriacaoElement);
+        
+        XMLElement* dataModificacaoElement = doc.NewElement("DataModificacao");
+        dataModificacaoElement->SetAttribute("dia", dataModificacao.getDia());
+        dataModificacaoElement->SetAttribute("mes", dataModificacao.getMes());
+        dataModificacaoElement->SetAttribute("ano", dataModificacao.getAno());
+        ficheiroElement->InsertEndChild(dataModificacaoElement);
+        
+        dirElement->InsertEndChild(ficheiroElement);
+    }
+    
+    // Recursão para subdiretorias
+    for(const auto& subDir : diretoria->getSubDiretorias()){
+        Escrever_XML_Recursivo(doc, dirElement, subDir.get());
+    }
 }
 
 
 bool SistemaFicheiros::Ler_XML(){
-    //função para ler os ficheiros em formato XML para todo o Sistema de Ficheiros
-    //por fazer
-    return false;
+    //função para ler o sistema de ficheiros de um ficheiro XML
+    XMLDocument doc;
+    
+    // Carregar ficheiro XML
+    if(doc.LoadFile("sistema_ficheiros.xml") != XML_SUCCESS){
+        cout << "Erro ao carregar ficheiro XML!" << endl;
+        return false;
+    }
+    
+    // Obter elemento raiz
+    XMLElement* raizXML = doc.FirstChildElement("SistemaFicheiros");
+    if(!raizXML){
+        cout << "Erro: Formato XML inválido!" << endl;
+        return false;
+    }
+    
+    // Limpar sistema atual
+    raiz = make_unique<Diretorias>("root");
+    diretoriaAtual = raiz.get();
+    diretoriaAnterior = nullptr;
+    
+    // Ler primeira diretoria (root)
+    XMLElement* primeiraDir = raizXML->FirstChildElement("Diretoria");
+    if(primeiraDir){
+        // Ler subdiretorias e ficheiros recursivamente
+        Ler_XML_Recursivo(primeiraDir, raiz.get());
+    }
+    
+    cout << "Sistema de ficheiros carregado com sucesso!" << endl;
+    return true;
+}
+
+void SistemaFicheiros::Ler_XML_Recursivo(XMLElement* elemento, Diretorias* diretoriaPai){
+    if(!elemento || !diretoriaPai) return;
+    
+    // Ler ficheiros da diretoria
+    for(XMLElement* ficheiroElement = elemento->FirstChildElement("Ficheiro");
+        ficheiroElement != nullptr;
+        ficheiroElement = ficheiroElement->NextSiblingElement("Ficheiro")){
+        
+        const char* nome = ficheiroElement->Attribute("nome");
+        unsigned int tamanho = ficheiroElement->UnsignedAttribute("tamanho");
+        
+        // Ler datas
+        XMLElement* dataCriacaoElement = ficheiroElement->FirstChildElement("DataCriacao");
+        XMLElement* dataModificacaoElement = ficheiroElement->FirstChildElement("DataModificacao");
+        
+        Datas dataCriacao(1, 1, 2024); // default
+        Datas dataModificacao(1, 1, 2024); // default
+        
+        if(dataCriacaoElement){
+            dataCriacao = Datas(
+                dataCriacaoElement->IntAttribute("dia"),
+                dataCriacaoElement->IntAttribute("mes"),
+                dataCriacaoElement->IntAttribute("ano")
+            );
+        }
+        
+        if(dataModificacaoElement){
+            dataModificacao = Datas(
+                dataModificacaoElement->IntAttribute("dia"),
+                dataModificacaoElement->IntAttribute("mes"),
+                dataModificacaoElement->IntAttribute("ano")
+            );
+        }
+        
+        // Criar ficheiro
+        auto ficheiro = make_unique<Ficheiros>(nome, tamanho, dataCriacao, dataModificacao);
+        diretoriaPai->addFicheiro(move(ficheiro));
+    }
+    
+    // Ler subdiretorias recursivamente
+    for(XMLElement* subDirElement = elemento->FirstChildElement("Diretoria");
+        subDirElement != nullptr;
+        subDirElement = subDirElement->NextSiblingElement("Diretoria")){
+        
+        const char* nomeDir = subDirElement->Attribute("nome");
+        
+        // Criar subdiretoria
+        auto subDir = make_unique<Diretorias>(nomeDir);
+        Diretorias* ptrSubDir = subDir.get();
+        diretoriaPai->addSubDiretoria(move(subDir));
+        
+        // Recursão para ler conteúdo da subdiretoria
+        Ler_XML_Recursivo(subDirElement, ptrSubDir);
+    }
 }
 
 bool SistemaFicheiros::MoverFicheiro(const string& nomeFicheiro, Diretorias* destino){
@@ -636,72 +770,51 @@ void RenomearFicheiros(const string& nomeAntigo, const string& nomeNovo){
 }
 
 bool SistemaFicheiros::FicheirosDuplicados(Diretorias* diretoria){
-    //função para encontrar ficheiros com o mesmo nome e o mesmo tamanho no sistema de ficheiros
+    //função para encontrar ficheiros com o mesmo nome no sistema de ficheiros
     if(!diretoria){
         diretoria = raiz.get();
     }
 
-    // Vetor para armazenar todos os ficheiros
-    vector<InfoFicheiro> todosFicheiros;
+    // Map: chave = nome, valor = lista de caminhos
+    map<string, vector<string>> duplicados;
     
-    // Recolher todos os ficheiros recursivamente
-    FicheirosDuplicadosRecursivo(diretoria, raiz->getNomeDiretoria(), todosFicheiros);
+    // Recolher todos os ficheiros
+    FicheirosDuplicadosRecursivo(diretoria, raiz->getNomeDiretoria(), duplicados);
     
-    // Procurar duplicados comparando cada ficheiro com os outros
-    bool encontrouDuplicados = false;
-    vector<bool> jaMostrado(todosFicheiros.size(), false); // para não mostrar o mesmo grupo 2 vezes
-    
+    // Mostrar apenas os duplicados
+    bool encontrou = false;
     cout << "=== Ficheiros Duplicados ===" << endl;
     
-    for(size_t i = 0; i < todosFicheiros.size(); i++){
-        if(jaMostrado[i]) continue; // já mostrou este grupo
-        
-        vector<string> grupo; // grupo de ficheiros duplicados
-        grupo.push_back(todosFicheiros[i].caminho);
-        
-        // Comparar com todos os ficheiros seguintes
-        for(size_t j = i + 1; j < todosFicheiros.size(); j++){
-            if(todosFicheiros[i].nome == todosFicheiros[j].nome &&
-               todosFicheiros[i].tamanho == todosFicheiros[j].tamanho){
-                grupo.push_back(todosFicheiros[j].caminho);
-                jaMostrado[j] = true; // marcar como mostrado
-            }
-        }
-        
-        // Se encontrou duplicados (mais de 1 no grupo)
-        if(grupo.size() > 1){
-            encontrouDuplicados = true;
-            cout << "Duplicado encontrado (" << grupo.size() << " cópias):" << endl;
-            for(const auto& caminho : grupo){
+    for(const auto& [nome, caminhos] : duplicados){
+        if(caminhos.size() > 1){
+            encontrou = true;
+            cout << "'" << nome << "' - " << caminhos.size() << " cópias:" << endl;
+            for(const auto& caminho : caminhos){
                 cout << "  - " << caminho << endl;
             }
             cout << endl;
         }
     }
     
-    if(!encontrouDuplicados){
+    if(!encontrou){
         cout << "Nenhum ficheiro duplicado encontrado." << endl;
     }
     
-    return encontrouDuplicados;
+    return encontrou;
 }
 
-void SistemaFicheiros::FicheirosDuplicadosRecursivo(Diretorias* diretoria, const string& caminho, vector<InfoFicheiro>& todosFicheiros){
+void SistemaFicheiros::FicheirosDuplicadosRecursivo(Diretorias* diretoria, const string& caminho, 
+                                                     map<string, vector<string>>& duplicados){
     if(!diretoria) return;
     
-    // Adicionar ficheiros da diretoria atual ao vetor
+    // Adicionar ficheiros ao map (apenas pelo nome)
     for(const auto& ficheiro : diretoria->getFicheiros()){
-        InfoFicheiro info;
-        info.nome = ficheiro->getNomeFicheiro();
-        info.tamanho = ficheiro->getTamanhoFicheiro();
-        info.caminho = caminho + "/" + ficheiro->getNomeFicheiro();
-        
-        todosFicheiros.push_back(info);
+        duplicados[ficheiro->getNomeFicheiro()].push_back(caminho + "/" + ficheiro->getNomeFicheiro());
     }
     
-    // Recursão nas subdiretorias
+    // Recursão
     for(const auto& subDir : diretoria->getSubDiretorias()){
-        string novoCaminho = caminho + "/" + subDir->getNomeDiretoria();
-        FicheirosDuplicadosRecursivo(subDir.get(), novoCaminho, todosFicheiros);
+        FicheirosDuplicadosRecursivo(subDir.get(), caminho + "/" + subDir->getNomeDiretoria(), duplicados);
     }
 }
+

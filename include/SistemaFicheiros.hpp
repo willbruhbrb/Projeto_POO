@@ -3,15 +3,9 @@
 #include <iostream>
 #include <filesystem>
 #include <vector>
+#include <map>
 #include "Ficheiros.hpp"
 #include "Diretorias.hpp"
-
-// Struct para armazenar informação dos ficheiros
-struct InfoFicheiro {
-    string nome;
-    size_t tamanho;
-    string caminho;
-};
 
 class SistemaFicheiros{
     private:
@@ -30,7 +24,9 @@ class SistemaFicheiros{
         void RemoveAllFicheirosRecursivo(Diretorias* diretoria);
         Datas* DataModificacaoFicheiro(const string& nomeFicheiro);//função auxiliar para obter a data de modificação
         void PesquisarAllFicheirosRecursivo(Diretorias* diretoria, const string& caminho, const string& nomeFicheiro);//função auxiliar recursiva para procurar ficheiros
-        void FicheirosDuplicadosRecursivo(Diretorias* diretoria, const string& caminho, vector<InfoFicheiro>& todosFicheiros);//função auxiliar recursiva para encontrar duplicados
+        void FicheirosDuplicadosRecursivo(Diretorias* diretoria, const string& caminho, map<string, vector<string>>& duplicados);//função auxiliar recursiva para encontrar duplicados
+        void Escrever_XML_Recursivo(tinyxml2::XMLDocument& doc, tinyxml2::XMLElement* elementoPai, Diretorias* diretoria);//função auxiliar recursiva para escrever XML
+        void Ler_XML_Recursivo(tinyxml2::XMLElement* elemento, Diretorias* diretoriaPai);//função auxiliar recursiva para ler XML
     public:
         //contrutor
         SistemaFicheiros();
@@ -76,4 +72,6 @@ class SistemaFicheiros{
         void RenomearFicheiros(const string& nomeAntigo, const string& nomeNovo);//função para renomear um ficheiro
         //falta esta função e depois só faltam a da tree, de escrever XML e ler XML e por fim a de CopyBach
         bool FicheirosDuplicados(Diretorias* diretoria = nullptr);//função para encontrar ficheiros duplicados no sistema de ficheiros
+        void Tree(Diretorias* diretoria = nullptr, const string& prefixo = "");//função para mostrar a estrutura em árvore do sistema de ficheiros
+        bool CopyBatch(const string& ficheiroBatch);//função para copiar todos os ficheiros de uma directoria cujo nome contenha uma determinada string para outra diretoria
 };

@@ -1,0 +1,79 @@
+# Makefile para o Projeto de POO - Sistema de Ficheiros
+
+# Compilador e flags
+CXX = g++
+CXXFLAGS = -std=c++17 -Wall -Wextra -I../include -I../include/TinyXML2/Include
+LDFLAGS = 
+s
+# Diretórios
+SRCDIR = .
+INCDIR = ../include
+OBJDIR = obj
+BINDIR = bin
+
+# Nome do executável
+TARGET = $(BINDIR)/sistema_ficheiros.exe
+
+# Ficheiros fonte e objetos
+SOURCES = main.cpp Elemento.cpp Ficheiros.cpp Diretorias.cpp SistemaFicheiros.cpp tinyxml2.cpp
+OBJECTS = $(SOURCES:%.cpp=$(OBJDIR)/%.o)
+
+# Regra principal
+all: directories $(TARGET)
+
+# Criar diretórios necessários
+directories:
+	@if not exist "$(OBJDIR)" mkdir "$(OBJDIR)"
+	@if not exist "$(BINDIR)" mkdir "$(BINDIR)"
+
+# Regra para criar o executável
+$(TARGET): $(OBJECTS)
+	@echo Linking $(TARGET)...
+	$(CXX) $(CXXFLAGS) $(OBJECTS) -o $(TARGET) $(LDFLAGS)
+	@echo Build concluída! Executável: $(TARGET)
+
+# Regra para compilar ficheiros .cpp em .o
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+	@echo Compiling $<...
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Dependências dos headers
+$(OBJDIR)/main.o: main.cpp $(INCDIR)/SistemaFicheiros.hpp
+$(OBJDIR)/Elemento.o: Elemento.cpp $(INCDIR)/Elemento.hpp $(INCDIR)/Datas.hpp
+$(OBJDIR)/Ficheiros.o: Ficheiros.cpp $(INCDIR)/Ficheiros.hpp $(INCDIR)/Elemento.hpp $(INCDIR)/Datas.hpp
+$(OBJDIR)/Diretorias.o: Diretorias.cpp $(INCDIR)/Diretorias.hpp $(INCDIR)/Ficheiros.hpp $(INCDIR)/Elemento.hpp
+$(OBJDIR)/SistemaFicheiros.o: SistemaFicheiros.cpp $(INCDIR)/SistemaFicheiros.hpp $(INCDIR)/Diretorias.hpp $(INCDIR)/Ficheiros.hpp $(INCDIR)/Datas.hpp $(INCDIR)/tinyxml2.h
+$(OBJDIR)/tinyxml2.o: tinyxml2.cpp $(INCDIR)/tinyxml2.h
+
+# Limpar ficheiros compilados
+clean:
+	@echo Cleaning...
+	@if exist "$(OBJDIR)\*.o" del /Q "$(OBJDIR)\*.o"
+	@if exist "$(TARGET)" del /Q "$(TARGET)"
+	@if exist "$(OBJDIR)" rmdir /Q "$(OBJDIR)"
+	@if exist "$(BINDIR)" rmdir /Q "$(BINDIR)"
+	@echo Clean concluída!
+
+# Executar o programa
+run: all
+	@echo Executing $(TARGET)...
+	@$(TARGET)
+
+# Rebuild (clean + build)
+rebuild: clean all
+
+# Mostrar ajuda
+help:
+	@echo ============================================
+	@echo Makefile - Sistema de Ficheiros
+	@echo ============================================
+	@echo Comandos disponíveis:
+	@echo   make          - Compila o projeto
+	@echo   make all      - Compila o projeto (igual a make)
+	@echo   make run      - Compila e executa o programa
+	@echo   make clean    - Remove ficheiros compilados
+	@echo   make rebuild  - Limpa e recompila tudo
+	@echo   make help     - Mostra esta ajuda
+	@echo ============================================
+
+.PHONY: all clean run rebuild help directories
